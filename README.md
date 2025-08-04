@@ -1,4 +1,6 @@
-Ok so, this is the simplest poll ever made using 4 mandatory aws services.\
+Ok so, this is the simplest poll ever made using 4 different mandatory aws services.\
+<img width="1069" height="523" alt="ArchDiag" src="https://github.com/user-attachments/assets/9142c7cd-9306-4f1a-89dc-12155e513169" />
+
 Q: What does this poll do? \
 A: Well, you can insert a question and all the options for that question.\
 Q: What can you do with it?\
