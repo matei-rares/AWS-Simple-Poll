@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Poll</title>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://openfpcdn.io/fingerprintjs/v3/iife.min.js"></script>
+
+    <style>
+      body { font-family: sans-serif; text-align: center; padding: 2em; }
+      button { margin: 1em; padding: 1em 2em; }
+      canvas { max-width: 500px; margin: 2em auto; }
+    </style>
+  </head>
+
+  <body>
+    <h1 id="question">Loading poll...</h1>
+    <div id="options"></div>
+    <!-- <div id="resultsChart" >Results</div> -->
+    <canvas id="resultsChart" ></canvas>
+    <div id="id"></div>
+
+
+    <script>
+      document.getElementById('id').style.display = 'none';
+
+      function setlocalStorage(key,value){
+        localStorage.setItem(key,value)
+      }
+
+      function getlocalStorage(key){
+        return localStorage.getItem(key)
+      }
+
+      function hideOptions(){
+        document.getElementById('options').style.display = 'none';
+      }
+
+      function populatePoll(data){
+        document.getElementById('question').textContent = data.question; 
+
+        optionsDiv.innerHTML = '';
+        data.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.textContent = opt;
+          console.log("btn: "+btn.textContent)
+          btn.onclick = () => vote(opt);
+          optionsDiv.appendChild(btn);
+        });
+      }
+
+
+
+      async function loadPoll() {
+        const res = await fetch(`${API}/poll?id=${pollId}`);
+        let data = await res.json();
+        data = JSON.parse(data.body)    
+        
+        //let data ={options:["ops1","ops2","ops3"], question : "Ce faci men ?"} //debug
+        // console.log("first")
+        // console.log(data)
+        
+        console.log("data:")
+        console.log(data)
+        console.log("User id:", visitorId);
+
+
+        var localStatus = null
+        var backendStatus = null 
+        backendStatus = data.ips.includes(visitorId) ? 1 : 0; 
+       
+        console.log("localStatus: "+localStatus)
+        console.log("backendStatus: "+backendStatus)
+
+        if (localStatus || backendStatus) {
+          hideOptions();
+        } 
+
+
+
+
+        populatePoll(data);
+        loadResults(); 
+      }
+      
+
+      async function vote(option) {
+        console.log("visitorId: "+visitorId)
+        const res = await fetch(`${API}/vote`, {
+          method: 'POST',
+          body: JSON.stringify({ pollId, option, visitorId }),
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+          optionsDiv.style.display = 'none';
+          localStorage.setItem('voted' + pollId, visitorId); 
+        }
+        else{
+          console.error("Error voting:", res.statusText);
+        }
+
+        loadResults(); 
+      }
+
+      async function loadResults() {
+        //return; //debug
+        const res = await fetch(`${API}/results?id=${pollId}`);
+        const data = await res.json();
+
+        console.log("second")
+        console.log(data)
+
+        updateChart(JSON.parse(data.body));
+      }
+
+      let chart;
+      function updateChart(data) {
+        console.log(data)
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+        if (!chart) {
+          const ctx = document.getElementById('resultsChart').getContext('2d');
+          chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{ label: 'Votes', data: values, backgroundColor: 'steelblue' }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } }
+            }
+          });
+        } else {
+          chart.data.labels = labels;
+          chart.data.datasets[0].data = values;
+          chart.update();
+        }
+      }
+
+      var ip ;
+      var pollId = new URLSearchParams(window.location.search).get('id');
+      var optionsDiv = document.getElementById('options');
+      var API='https://nxw5awp976.execute-api.us-east-1.amazonaws.com/MyStage1';
+      
+      var visitorId = null; 
+
+      document.addEventListener("DOMContentLoaded", async () => {
+
+        FingerprintJS.load().then(fp => {
+            fp.get().then(result => {
+              visitorId = result.visitorId;
+              console.log("Visitor ID:", visitorId);
+              document.getElementById('id').textContent = visitorId;
+            });
+          });
+
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        ip = data.ip;
+        console.log("Visitor ID:", visitorId);
+      
+
+        if (!pollId) {
+          document.body.innerHTML = "<h2>Missing poll ID in URL</h2>";
+          throw new Error("No pollId");
+        }
+        loadPoll();
+
+
+      })
+    </script>
+  </body>
+</html>
+
+
+

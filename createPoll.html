@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Poll</title>
+</head>
+<body>
+  <h1>Create a Poll</h1>
+  <form id="pollForm">
+    <label>Question:</label><br />
+    <input id="question" /><br /><br />
+    <label>Options (comma-separated):</label><br />
+    <input id="options" /><br /><br />
+    <button type="submit">Create</button>
+  </form>
+
+  <p id="link" ></p>
+		
+  <script>
+  API='https://nxw5awp976.execute-api.us-east-1.amazonaws.com/MyStage1'
+    document.getElementById("pollForm").addEventListener("submit", async (e) => {
+      e.preventDefault();  
+      
+	  
+      const question = document.getElementById("question").value;
+      const options = document.getElementById("options").value.split(',').map(o => o.trim());
+	  console.log(question)
+	  console.log(options)
+	  
+      const res = await fetch(API+"/create", {
+        method: "POST",
+        body: JSON.stringify({ question, options }),
+        headers: { "Content-Type": "application/json" }
+      });
+	  
+	   var data = await res.json();
+	   
+	   data= JSON.parse(data.body)
+		var link = `https://bucky4444.s3.us-east-1.amazonaws.com/poll.html?id=${data.PID}`;
+    
+		console.log(link)
+    document.getElementById("link").innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
+
+    });
+	
+  </script>
+</body>
+</html>
+
+
+
